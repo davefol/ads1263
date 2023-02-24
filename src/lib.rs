@@ -5,8 +5,8 @@ use register::register::Register;
 use embedded_hal::blocking::spi::Transfer;
 use embedded_hal::digital::v2::OutputPin;
 
-mod register;
-mod command;
+pub mod register;
+pub mod command;
 
 pub const CHECK_BYTE: u8 = 0x9B;
 pub const CRC_BYTE: u64 = 0b100000111;
