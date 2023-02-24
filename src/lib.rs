@@ -100,8 +100,9 @@ where
         if checksum_byte_enable != 0b00 {
         }
 
+        self.cs.set_low().map_err(Error::PinError)?;
         let out = self.spi.transfer(&mut buf).map_err(Error::SpiError)?;
-        println!("{:?}", out);
+        self.cs.set_high().map_err(Error::PinError)?;
 
         Ok(as_u32_be(&[
             out[data_index],

@@ -1,6 +1,6 @@
 [package]
 name = "ads1263"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 description = "ADS1263 device driver for Rust using embedded_hal traits"
 license = "MIT"
