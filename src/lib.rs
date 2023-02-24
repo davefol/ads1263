@@ -92,17 +92,16 @@ where
         self.write_bitfield(positive_pin)?;
         self.write_bitfield(negative_pin)?;
 
-        let mut buf = vec![Command::RDATA1 as u8, 0, 0, 0, 0];
+        let mut buf = [Command::RDATA1 as u8, 0, 0, 0, 0, 0, 0];
         let mut data_index = 1;
         if status_byte_enable {
-            buf.push(0);
             data_index += 1;
         }
         if checksum_byte_enable != 0b00 {
-            buf.push(0);
         }
 
         let out = self.spi.transfer(&mut buf).map_err(Error::SpiError)?;
+        println!("{:?}", out);
 
         Ok(as_u32_be(&[
             out[data_index],

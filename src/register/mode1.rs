@@ -1,5 +1,5 @@
 #![allow(non_camel_case_types)]
-use crate::{impl_bitfield, register::register::Register, register::bitfield::BitField};
+use crate::{impl_bitfield, register::bitfield::BitField, register::register::Register};
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug)]
@@ -12,12 +12,11 @@ pub enum DigitalFilter {
 }
 impl_bitfield!(DigitalFilter, 5, 7, Register::MODE1);
 
-
 #[repr(u8)]
 #[derive(Clone, Copy, Debug)]
 pub enum SensorBiasADC {
     ADC1 = 0,
-    ADC2 = 1
+    ADC2 = 1,
 }
 impl_bitfield!(SensorBiasADC, 4, 4, Register::MODE1);
 

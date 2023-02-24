@@ -1,4 +1,4 @@
-use crate::{register::bitfield::BitField, impl_bitfield, register::register::Register};
+use crate::{impl_bitfield, register::bitfield::BitField, register::register::Register};
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug)]
