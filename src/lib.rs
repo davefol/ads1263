@@ -1,6 +1,6 @@
 use command::Command;
 use embedded_hal::{
-    blocking::spi::Transfer,
+    blocking::{delay::DelayMs, spi::Transfer},
     digital::v2::{InputPin, OutputPin},
 };
 use register::bitfield::BitField;
@@ -36,25 +36,28 @@ fn as_u32_be(array: &[u8; 4]) -> u32 {
         + ((array[3] as u32) << 0)
 }
 
-pub struct ADS1263<SPI, CS, DRDY>
+pub struct ADS1263<SPI, CS, DRDY, Delay>
 where
     SPI: Transfer<u8>,
     CS: OutputPin,
     DRDY: InputPin,
+    Delay: DelayMs<u32>
 {
     spi: SPI,
     cs: CS,
     drdy: Option<DRDY>,
+    delay: Delay
 }
 
-impl<SPI, CS, DRDY, S, P> ADS1263<SPI, CS, DRDY>
+impl<SPI, CS, DRDY, Delay, S, P> ADS1263<SPI, CS, DRDY, Delay>
 where
     SPI: Transfer<u8, Error = S>,
     CS: OutputPin<Error = P>,
     DRDY: InputPin<Error = P>,
+    Delay: DelayMs<u32>
 {
-    pub fn new(spi: SPI, cs: CS, drdy: Option<DRDY>) -> Self {
-        Self { spi, cs, drdy }
+    pub fn new(spi: SPI, cs: CS, drdy: Option<DRDY>, delay: Delay) -> Self {
+        Self { spi, cs, drdy, delay }
     }
 
     /// Send a command to the device
@@ -123,7 +126,6 @@ where
                 }
             }
         }
-
     }
 
     fn read_data1(&mut self) -> Result<(Option<u8>, u32, Option<Checksum>), Error<S, P>> {
@@ -160,12 +162,10 @@ where
             0 => Ok(None),
             0b01 => Ok(Some(Checksum::Checksum(out[data_index + 4]))),
             0b10 => Ok(Some(Checksum::CRC(out[data_index + 4]))),
-            _ => Err(Error::InvalidResponseFromDevice)
+            _ => Err(Error::InvalidResponseFromDevice),
         };
 
         Ok((status_byte, data, checksum_byte?))
-
-        
     }
 
     pub fn wait_for_pin_data_ready(&mut self) -> Result<(), Error<S, P>> {
@@ -184,5 +184,24 @@ where
         } else {
             Err(Error::DRDYPinNotConfigured)
         }
+    }
+
+    pub fn calibrate_self_offset1(&mut self) -> Result<([u8; 3]), Error<S, P>> {
+        self.write_bitfield(PositiveInpmux::FLOAT)?;
+        self.write_bitfield(NegativeInpmux::FLOAT)?;
+        self.delay.delay_ms(10);
+        self.send_command(Command::SFOCAL1)?;
+        self.delay.delay_ms(50);
+        let ofcal0 = self.read_register(Register::OFCAL0)?;
+        let ofcal1 = self.read_register(Register::OFCAL1)?;
+        let ofcal2 = self.read_register(Register::OFCAL2)?;
+        Ok([ofcal0, ofcal1, ofcal2])
+    }
+
+    pub fn load_calibration_offset1(&mut self, ofcal: [u8; 3]) -> Result<(), Error<S, P>> {
+        self.write_register(Register::OFCAL0, ofcal[0])?;
+        self.write_register(Register::OFCAL1, ofcal[1])?;
+        self.write_register(Register::OFCAL2, ofcal[2])?;
+        Ok(())
     }
 }
